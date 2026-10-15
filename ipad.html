@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: tocadiscos de nogal a la izquierda con el reproductor de Spotify debajo; la colección de enlaces a la derecha. Una columna en teléfono. */
+/* Layout: tocadiscos a la izquierda sobre un fondo difuminado con la portada; panel de conexión e instrucciones a la derecha. Una columna en teléfono. */
 :root{
   --bg:#120d0a; --panel:#1b140f; --line:#33271e; --fg:#efe4d4; --muted:#9a8774;
   --brass:#c9a15a; --brass-hi:#e7c98a; --ink:#120d0a; --warn:#e58a6b;
@@ -22,6 +22,12 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
+.bgart{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.bgart div{position:absolute;inset:-20%;background-size:cover;background-position:center;filter:blur(70px) saturate(1.6) brightness(.7);opacity:0;transition:opacity 1.4s ease}
+.bgart div.on{opacity:1}
+.bgart::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,13,10,.35),rgba(18,13,10,.7))}
+@media (prefers-reduced-motion:reduce){.bgart div{transition:none}}
 html,body{min-height:100%;margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--display);font-size:15px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
@@ -70,7 +76,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass-hi);outli
 #embedWrap{border-radius:14px;overflow:hidden;background:var(--panel);min-height:152px}
 #embedWrap iframe{display:block;border:0}
 
-.crate{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;min-width:0}
+.crate{background:rgba(27,20,15,.55);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;min-width:0}
 .crate h2{margin:0;font-size:20px;font-weight:600}
 form{display:grid;gap:8px}
 form label{font-size:13px;color:var(--muted)}
@@ -95,6 +101,7 @@ ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 </style>
 </head>
 <body>
+<div class="bgart" aria-hidden="true"><div id="bgA"></div><div id="bgB"></div></div>
 <div class="app">
   <header>
     <h1>Tocadiscos</h1>
@@ -178,13 +185,16 @@ ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
   <aside class="crate">
     <div id="setup">
       <h2>Conectar Spotify</h2>
+      <details class="howto" open>
+      <summary>Instrucciones</summary>
       <ol class="steps">
         <li>Entra a <b>developer.spotify.com/dashboard</b> y toca <b>Create app</b>.</li>
         <li>Ponle cualquier nombre y descripción. En <b>Redirect URI</b> pega exactamente esta dirección:
           <div class="copyrow"><code id="redir"></code><button type="button" class="mini" id="copyRedir">Copiar</button></div></li>
         <li>Marca <b>Web API</b>, acepta los términos y toca <b>Save</b>.</li>
-        <li>Abre <b>Settings</b> de tu app, copia el <b>Client ID</b> y pégalo aquí:</li>
+        <li>Abre <b>Settings</b> de tu app, copia el <b>Client ID</b> y pégalo aquí abajo.</li>
       </ol>
+      </details>
       <form id="cidForm">
         <label for="cid" class="vh-label">Client ID</label>
         <div class="row">
@@ -201,7 +211,15 @@ ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
         <div><dt>Año</dt><dd id="fYear">—</dd></div>
       </dl>
       <a id="openLink" class="add linkbtn" href="https://open.spotify.com" target="_blank" rel="noopener">Abrir en Spotify</a>
-      <p class="note">Pon música desde la app de Spotify y deja esta página abierta: el disco gira, cambia de portada y el brazo avanza con cada canción. Los botones de aquí controlan Spotify.</p>
+      <details class="howto">
+        <summary>Instrucciones</summary>
+        <div class="howto-body">
+          <p>Pon música desde la app de Spotify en cualquier dispositivo: el tocadiscos muestra lo que suena y sus botones lo controlan.</p>
+          <p>Para usarlo en otro iPad, iPhone o computador, abre esta misma página allí, toca <b>Conectar</b> y pega tu Client ID:</p>
+          <div class="copyrow"><code id="cidShow"></code><button type="button" class="mini" id="copyCid">Copiar</button></div>
+          <p>Para tenerlo como app: en Safari toca compartir › <b>Agregar a pantalla de inicio</b> y activa <b>Abrir como app web</b>.</p>
+        </div>
+      </details>
       <button type="button" class="pill" id="logout">Desconectar</button>
     </div>
   </aside>
@@ -211,7 +229,16 @@ ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .sub{margin:4px 0 0;color:var(--muted);font-size:16px}
 #msg{margin:0;font-size:14px;color:var(--warn);min-height:1em}
 #setup,#connected{display:grid;gap:14px}
-.steps{list-style:decimal;padding-left:20px;display:grid;gap:10px;line-height:1.5;font-size:14px;color:var(--fg)}
+.howto{border-top:1px solid var(--line);padding-top:12px}
+.howto summary{cursor:pointer;font-weight:600;color:var(--brass-hi);list-style:none;display:flex;align-items:center;gap:8px}
+.howto summary::-webkit-details-marker{display:none}
+.howto summary::before{content:"";width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .2s}
+.howto[open] summary::before{transform:rotate(45deg)}
+.howto[open] .steps,.howto-body{margin-top:12px}
+.howto-body{display:grid;gap:10px;font-size:14px;line-height:1.5}
+.howto-body p{margin:0}
+.howto-body b{color:var(--brass-hi);font-weight:600}
+.steps{margin:0;list-style:decimal;padding-left:20px;display:grid;gap:10px;line-height:1.5;font-size:14px;color:var(--fg)}
 .steps b{color:var(--brass-hi);font-weight:600}
 .copyrow{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
 code{font-family:var(--mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);padding:6px 8px;border-radius:8px;overflow-wrap:anywhere;min-width:0}
@@ -289,7 +316,13 @@ async function api(path,method='GET'){
 
 // ---------- estado del disco ----------
 let st={playing:false,pos:0,dur:0,at:Date.now(),uri:''},seeking=false,crackleOn=false;
+function setBg(url){
+  const a=$('bgA'),b=$('bgB'),front=a.classList.contains('on')?a:b,back=front===a?b:a;
+  if(!url){a.classList.remove('on');b.classList.remove('on');return}
+  const im=new Image();im.onload=()=>{back.style.backgroundImage='url("'+url+'")';back.classList.add('on');front.classList.remove('on')};im.src=url;
+}
 function setLabel(title,img,seed){
+  setBg(img);
   $('labelBg').setAttribute('fill',`hsl(${hueOf(seed||'x')} 55% 55%)`);
   $('labelImg').setAttribute('href',img||'');
   $('labelTxt').textContent=img?'':(title||'').slice(0,16).toUpperCase();
@@ -380,7 +413,8 @@ $('crackle').onclick=()=>{
 // ---------- configuración ----------
 $('redir').textContent=REDIRECT;
 $('copyRedir').onclick=()=>{navigator.clipboard.writeText(REDIRECT).then(()=>{$('copyRedir').textContent='Copiado'},()=>{const r=document.createRange();r.selectNodeContents($('redir'));const s=getSelection();s.removeAllRanges();s.addRange(r)})};
-if(LS.get('td.cid'))$('cid').value=LS.get('td.cid');
+if(LS.get('td.cid')){$('cid').value=LS.get('td.cid');$('cidShow').textContent=LS.get('td.cid')}
+$('copyCid').onclick=()=>{navigator.clipboard.writeText($('cidShow').textContent).then(()=>{$('copyCid').textContent='Copiado'},()=>{})};
 $('cidForm').addEventListener('submit',e=>{e.preventDefault();const c=$('cid').value.trim();
   if(!/^[a-f0-9]{32}$/i.test(c)){say('El Client ID son 32 letras y números. Cópialo desde Settings de tu app en Spotify.');return}
   login(c)});
