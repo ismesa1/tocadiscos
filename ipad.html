@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tocadiscos">
+<meta name="theme-color" content="#120d0a">
+<title>Tocadiscos</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%233b2215'/%3E%3Ccircle cx='82' cy='90' r='66' fill='%23111'/%3E%3Ccircle cx='82' cy='90' r='22' fill='%23c9a15a'/%3E%3Ccircle cx='82' cy='90' r='3' fill='%23ddd'/%3E%3Cpath d='M150 24 L150 110 Q150 122 140 130' stroke='%23e0dcd5' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: tocadiscos de nogal a la izquierda con el reproductor de Spotify debajo; la colección de enlaces a la derecha. Una columna en teléfono. */
+:root{
+  --bg:#120d0a; --panel:#1b140f; --line:#33271e; --fg:#efe4d4; --muted:#9a8774;
+  --brass:#c9a15a; --brass-hi:#e7c98a; --ink:#120d0a; --warn:#e58a6b;
+  --display:"Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--display);font-size:15px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:calc(40px + env(safe-area-inset-bottom,0px));
+  -webkit-tap-highlight-color:transparent}
+.app{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:28px 36px;align-items:start}
+@media (max-width:820px){.app{grid-template-columns:minmax(0,1fr)}}
+header{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
+h1{margin:0;font-size:clamp(30px,4.2vw,44px);font-weight:800;letter-spacing:-.025em}
+header p{margin:0;color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+
+#deck{display:block;width:100%;height:auto;filter:drop-shadow(0 18px 30px rgba(0,0,0,.55))}
+.disc{transform-box:view-box;transform-origin:200px 200px;animation:spin var(--spin,1.8s) linear infinite;animation-play-state:paused}
+#deck.playing .disc{animation-play-state:running}
+@keyframes spin{to{transform:rotate(360deg)}}
+#arm{transform-box:view-box;transform-origin:430px 70px;transition:transform 1s cubic-bezier(.3,.7,.2,1);filter:drop-shadow(4px 8px 5px rgba(0,0,0,.55))}
+#lamp{transition:fill .3s}
+@media (prefers-reduced-motion:reduce){.disc{animation:none}#arm{transition:none}}
+
+.now{display:grid;gap:16px;margin-top:22px}
+.eyebrow{margin:0 0 4px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass)}
+#nowTitle{margin:0;font-size:clamp(22px,3vw,30px);font-weight:600;letter-spacing:-.01em;line-height:1.15;overflow-wrap:anywhere}
+.seek{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--brass) var(--p,0%),var(--line) var(--p,0%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--brass-hi);margin-top:-7px;border:0;box-shadow:0 1px 4px rgba(0,0,0,.6)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line)}
+input[type=range]::-moz-range-progress{height:4px;background:var(--brass)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--brass-hi);border:0}
+
+.ctrls{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.transport{display:flex;align-items:center;gap:10px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--brass-hi);outline-offset:3px}
+.ic{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center}
+.ic svg{width:20px;height:20px;fill:var(--fg)}
+.ic.big{width:64px;height:64px;background:var(--brass);border-color:var(--brass)}
+.ic.big svg{width:26px;height:26px;fill:var(--ink)}
+.opts{display:flex;gap:10px;margin-left:auto;flex-wrap:wrap}
+@media (max-width:520px){.opts{margin-left:0}}
+.sw{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--panel)}
+.sw button,.pill{border:0;background:transparent;padding:8px 14px;border-radius:999px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.sw button[aria-pressed=true]{background:var(--fg);color:var(--ink)}
+.pill{border:1px solid var(--line);background:var(--panel)}
+.pill[aria-pressed=true]{color:var(--ink);background:var(--brass);border-color:var(--brass)}
+#embedWrap{border-radius:14px;overflow:hidden;background:var(--panel);min-height:152px}
+#embedWrap iframe{display:block;border:0}
+
+.crate{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;min-width:0}
+.crate h2{margin:0;font-size:20px;font-weight:600}
+form{display:grid;gap:8px}
+form label{font-size:13px;color:var(--muted)}
+.row{display:flex;gap:8px}
+#link{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:16px}
+.add{flex:none;padding:12px 16px;border-radius:12px;border:0;background:var(--fg);color:var(--ink);font-weight:600}
+#msg{margin:0;font-size:13px;color:var(--warn);min-height:1em}
+ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.trk{display:flex;align-items:center;gap:4px;border-radius:12px}
+.trk.on{background:#2a2017}
+.pick{flex:1;min-width:0;display:flex;align-items:center;gap:12px;border:0;background:transparent;padding:8px;text-align:left;border-radius:12px}
+.thumb{flex:none;width:46px;height:46px;border-radius:50%;background:radial-gradient(circle,hsl(var(--h) 55% 55%) 0 34%,#0c0c0c 35% 100%);position:relative;overflow:hidden}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;clip-path:circle(36%)}
+.thumb::after{content:"";position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle,transparent 0 2px,rgba(255,255,255,.05) 2px 3px);pointer-events:none}
+.meta{min-width:0;display:grid}
+.meta .t,.meta .a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta .t{font-weight:600;font-size:15px}
+.meta .a{color:var(--muted);font-size:13px}
+.trk.on .meta .t{color:var(--brass-hi)}
+.rm{flex:none;width:36px;height:36px;border:0;background:transparent;color:var(--muted);font-size:22px;border-radius:50%}
+.note{margin:0;color:var(--muted);font-size:13px;line-height:1.5;max-width:60ch}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Tocadiscos</h1>
+    <p id="rpmTag">33⅓ rpm · Spotify</p>
+  </header>
+
+  <section>
+    <svg id="deck" viewBox="0 0 500 400" role="img" aria-label="Tocadiscos con el disco actual">
+      <defs>
+        <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#55331f"/><stop offset=".55" stop-color="#3b2215"/><stop offset="1" stop-color="#26150c"/>
+        </linearGradient>
+        <radialGradient id="vinyl" cx="200" cy="200" r="172" gradientUnits="userSpaceOnUse">
+          <stop offset=".35" stop-color="#181716"/><stop offset="1" stop-color="#0a0a0a"/>
+        </radialGradient>
+        <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#7f7b75"/><stop offset=".45" stop-color="#ece8e1"/><stop offset="1" stop-color="#8e8a84"/>
+        </linearGradient>
+        <clipPath id="labelClip"><circle cx="200" cy="200" r="58"/></clipPath>
+      </defs>
+      <rect width="500" height="400" rx="24" fill="url(#wood)"/>
+      <g fill="none" stroke="#000" stroke-opacity=".12" stroke-width="1.2">
+        <path d="M0 40 C120 30 260 55 500 36"/><path d="M0 96 C150 110 300 80 500 104"/><path d="M0 170 C140 160 340 190 500 168"/>
+        <path d="M0 244 C160 258 300 230 500 252"/><path d="M0 318 C130 305 330 335 500 316"/><path d="M0 372 C170 384 320 362 500 380"/>
+      </g>
+      <rect x="5" y="5" width="490" height="390" rx="20" fill="none" stroke="#fff" stroke-opacity=".07"/>
+      <circle cx="200" cy="200" r="184" fill="#0d0c0b"/>
+      <circle cx="200" cy="200" r="184" fill="none" stroke="url(#metal)" stroke-width="2.5" opacity=".55"/>
+      <g class="disc">
+        <circle cx="200" cy="200" r="172" fill="url(#vinyl)"/>
+        <g id="grooves" fill="none"></g>
+        <circle id="labelBg" cx="200" cy="200" r="58" fill="hsl(28 60% 52%)"/>
+        <image id="labelImg" x="142" y="142" width="116" height="116" preserveAspectRatio="xMidYMid slice" clip-path="url(#labelClip)" href=""/>
+        <text id="labelTxt" x="200" y="186" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="#120d0a" letter-spacing="1">TOCADISCOS</text>
+      </g>
+      <path d="M286 51 A172 172 0 0 1 331.8 89.4 L246 161.4 A60 60 0 0 0 230 148 Z" fill="#fff" opacity=".05"/>
+      <path d="M114 349 A172 172 0 0 1 68.2 310.6 L154 238.6 A60 60 0 0 0 170 252 Z" fill="#fff" opacity=".05"/>
+      <circle cx="200" cy="200" r="5" fill="url(#metal)"/>
+      <rect x="452" y="200" width="12" height="150" rx="6" fill="#1a0f09"/>
+      <rect id="pitch" x="447" y="268" width="22" height="12" rx="3" fill="url(#metal)"/>
+      <circle id="lamp" cx="40" cy="362" r="5" fill="#3a2a1e"/>
+      <text x="54" y="366" font-family="IBM Plex Mono, monospace" font-size="10" fill="#c9a15a" opacity=".8" letter-spacing="1">START</text>
+      <g id="arm">
+        <circle cx="430" cy="70" r="30" fill="#1a110b" stroke="#fff" stroke-opacity=".08"/>
+        <rect x="419" y="14" width="22" height="30" rx="4" fill="url(#metal)"/>
+        <circle cx="430" cy="70" r="14" fill="url(#metal)"/>
+        <path d="M430 70 L430 286 Q430 304 421 318" stroke="url(#metal)" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <rect x="406" y="312" width="22" height="34" rx="3" fill="#262423" stroke="#bdb8b0" stroke-width="1.2" transform="rotate(22 417 329)"/>
+      </g>
+    </svg>
+
+    <div class="now">
+      <div>
+        <p class="eyebrow" id="state">Sin conectar</p>
+        <h2 id="nowTitle">Conecta tu Spotify</h2>
+        <p id="nowArtist" class="sub">El disco va a mostrar lo que suena en tu app de Spotify.</p>
+      </div>
+      <div class="seek">
+        <span id="tCur">0:00</span>
+        <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Posición en la canción">
+        <span id="tDur">0:00</span>
+      </div>
+      <div class="ctrls">
+        <div class="transport">
+          <button class="ic" id="prev" aria-label="Anterior"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+          <button class="ic big" id="play" aria-label="Reproducir"><svg viewBox="0 0 24 24" id="playIc"><path d="M7 4v16l13-8z"/></svg></button>
+          <button class="ic" id="next" aria-label="Siguiente"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+        </div>
+        <div class="opts">
+          <div class="sw" role="group" aria-label="Velocidad del disco">
+            <button id="rpm33" aria-pressed="true">33⅓</button>
+            <button id="rpm45" aria-pressed="false">45</button>
+          </div>
+          <button class="pill" id="crackle" aria-pressed="false">Crujido</button>
+        </div>
+      </div>
+      <p id="msg" role="status"></p>
+    </div>
+  </section>
+
+  <aside class="crate">
+    <div id="setup">
+      <h2>Conectar Spotify</h2>
+      <ol class="steps">
+        <li>Entra a <b>developer.spotify.com/dashboard</b> y toca <b>Create app</b>.</li>
+        <li>Ponle cualquier nombre y descripción. En <b>Redirect URI</b> pega exactamente esta dirección:
+          <div class="copyrow"><code id="redir"></code><button type="button" class="mini" id="copyRedir">Copiar</button></div></li>
+        <li>Marca <b>Web API</b>, acepta los términos y toca <b>Save</b>.</li>
+        <li>Abre <b>Settings</b> de tu app, copia el <b>Client ID</b> y pégalo aquí:</li>
+      </ol>
+      <form id="cidForm">
+        <label for="cid" class="vh-label">Client ID</label>
+        <div class="row">
+          <input id="cid" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Client ID (32 letras y números)">
+          <button class="add" type="submit">Conectar</button>
+        </div>
+      </form>
+    </div>
+    <div id="connected" hidden>
+      <h2>Sonando en</h2>
+      <dl class="facts">
+        <div><dt>Dispositivo</dt><dd id="fDevice">—</dd></div>
+        <div><dt>Álbum</dt><dd id="fAlbum">—</dd></div>
+        <div><dt>Año</dt><dd id="fYear">—</dd></div>
+      </dl>
+      <a id="openLink" class="add linkbtn" href="https://open.spotify.com" target="_blank" rel="noopener">Abrir en Spotify</a>
+      <p class="note">Pon música desde la app de Spotify y deja esta página abierta: el disco gira, cambia de portada y el brazo avanza con cada canción. Los botones de aquí controlan Spotify.</p>
+      <button type="button" class="pill" id="logout">Desconectar</button>
+    </div>
+  </aside>
+</div>
+
+<style>
+.sub{margin:4px 0 0;color:var(--muted);font-size:16px}
+#msg{margin:0;font-size:14px;color:var(--warn);min-height:1em}
+#setup,#connected{display:grid;gap:14px}
+.steps{list-style:decimal;padding-left:20px;display:grid;gap:10px;line-height:1.5;font-size:14px;color:var(--fg)}
+.steps b{color:var(--brass-hi);font-weight:600}
+.copyrow{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+code{font-family:var(--mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);padding:6px 8px;border-radius:8px;overflow-wrap:anywhere;min-width:0}
+.mini{border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:6px 12px;border-radius:999px;font-size:13px}
+.vh-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#cid{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:16px}
+.facts{margin:0;display:grid;gap:10px}
+.facts div{display:grid;grid-template-columns:100px minmax(0,1fr);gap:10px}
+.facts dt{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+.facts dd{margin:0;overflow-wrap:anywhere}
+.linkbtn{text-decoration:none;text-align:center;display:block}
+#logout{justify-self:start}
+</style>
+
+<script>
+const $=s=>document.getElementById(s);
+const deck=$('deck'),arm=$('arm');
+const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const REDIRECT=location.origin+location.pathname.replace(/index\.html$/,'');
+const SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing';
+
+(()=>{const g=$('grooves');let h='';for(let r=64;r<=168;r+=3){const gap=[96,124,150].includes(r);h+=`<circle cx="200" cy="200" r="${r}" stroke="${gap?'#000':'#fff'}" stroke-opacity="${gap?.5:(.025+(r%9)/300).toFixed(3)}" stroke-width="${gap?2:1}"/>`}g.innerHTML=h})();
+const hueOf=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h};
+const fmt=ms=>{let s=Math.floor((ms||0)/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const say=t=>{$('msg').textContent=t||''};
+
+// ---------- inicio de sesión (PKCE, sin servidor) ----------
+const b64url=buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+function randStr(n){const a='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';const v=crypto.getRandomValues(new Uint8Array(n));return[...v].map(x=>a[x%a.length]).join('')}
+async function login(cid){
+  const verifier=randStr(64);LS.set('td.verifier',verifier);LS.set('td.cid',cid);
+  const challenge=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier)));
+  const p=new URLSearchParams({response_type:'code',client_id:cid,scope:SCOPES,code_challenge_method:'S256',code_challenge:challenge,redirect_uri:REDIRECT});
+  location.href='https://accounts.spotify.com/authorize?'+p;
+}
+async function tokenRequest(body){
+  const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error_description||j.error||('Error '+r.status));
+  LS.set('td.access',j.access_token);LS.set('td.expires',String(Date.now()+(j.expires_in-60)*1000));
+  if(j.refresh_token)LS.set('td.refresh',j.refresh_token);
+}
+async function handleCallback(){
+  const q=new URLSearchParams(location.search);
+  if(!q.has('code')&&!q.has('error'))return;
+  history.replaceState(null,'',REDIRECT);
+  if(q.get('error')){say('Spotify no dio permiso ('+q.get('error')+'). Intenta conectar otra vez.');return}
+  try{await tokenRequest({grant_type:'authorization_code',code:q.get('code'),redirect_uri:REDIRECT,client_id:LS.get('td.cid'),code_verifier:LS.get('td.verifier')})}
+  catch(e){say('No se pudo conectar: '+e.message+'. Revisa que la Redirect URI en Spotify sea exactamente la de los pasos.')}
+}
+async function token(){
+  if(LS.get('td.access')&&Date.now()<+LS.get('td.expires'))return LS.get('td.access');
+  if(!LS.get('td.refresh'))return null;
+  try{await tokenRequest({grant_type:'refresh_token',refresh_token:LS.get('td.refresh'),client_id:LS.get('td.cid')});return LS.get('td.access')}
+  catch(e){logout();say('La conexión venció. Toca Conectar otra vez.');return null}
+}
+function logout(){['td.access','td.expires','td.refresh','td.verifier'].forEach(LS.del);showSetup(true)}
+
+// ---------- API de Spotify ----------
+async function api(path,method='GET'){
+  const t=await token();if(!t)return null;
+  const r=await fetch('https://api.spotify.com/v1'+path,{method,headers:{Authorization:'Bearer '+t}});
+  if(r.status===204)return{};
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){
+    const reason=j.error&&(j.error.reason||j.error.message)||'';
+    if(r.status===404||reason==='NO_ACTIVE_DEVICE')say('Abre la app de Spotify y pon a sonar algo; luego vuelve aquí.');
+    else if(r.status===403)say('Spotify no permitió esa acción. Revisa que tu cuenta tenga Premium y esté en Users Management de tu app.');
+    else if(r.status===429)say('Demasiadas solicitudes; espera unos segundos.');
+    else say('Spotify respondió: '+(reason||r.status));
+    return null;
+  }
+  return j;
+}
+
+// ---------- estado del disco ----------
+let st={playing:false,pos:0,dur:0,at:Date.now(),uri:''},seeking=false,crackleOn=false;
+function setLabel(title,img,seed){
+  $('labelBg').setAttribute('fill',`hsl(${hueOf(seed||'x')} 55% 55%)`);
+  $('labelImg').setAttribute('href',img||'');
+  $('labelTxt').textContent=img?'':(title||'').slice(0,16).toUpperCase();
+}
+function setPlaying(v){
+  st.playing=v;deck.classList.toggle('playing',v);
+  $('playIc').innerHTML=v?'<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>':'<path d="M7 4v16l13-8z"/>';
+  $('play').setAttribute('aria-label',v?'Pausar':'Reproducir');
+  $('lamp').setAttribute('fill',v?'#e7c98a':'#3a2a1e');
+  crackleLevel();
+}
+function tick(){
+  const pos=st.playing?Math.min(st.dur,st.pos+(Date.now()-st.at)):st.pos;
+  const p=st.dur?pos/st.dur:0;
+  if(!seeking){$('seek').value=Math.round(p*1000);$('seek').style.setProperty('--p',(p*100)+'%')}
+  $('tCur').textContent=fmt(pos);$('tDur').textContent=fmt(st.dur);
+  arm.style.transform=`rotate(${(st.uri&&(st.playing||pos>300))?24+p*14:0}deg)`;
+}
+setInterval(tick,500);
+
+async function poll(){
+  if(document.hidden||!LS.get('td.refresh'))return;
+  const j=await api('/me/player?additional_types=episode');
+  if(j===null)return;
+  if(!j.item){
+    setPlaying(false);st.uri='';st.pos=0;st.dur=0;
+    $('state').textContent='Nada sonando';$('nowTitle').textContent='Pon algo en Spotify';
+    $('nowArtist').textContent='Abre la app de Spotify y dale play: aparecerá aquí.';setLabel('',null,'x');
+    $('fDevice').textContent=j.device?j.device.name:'—';$('fAlbum').textContent='—';$('fYear').textContent='—';
+    return;
+  }
+  say('');
+  const it=j.item,alb=it.album||it.show||{},imgs=alb.images||it.images||[];
+  st.pos=j.progress_ms||0;st.dur=it.duration_ms||0;st.at=Date.now();
+  if(st.playing!==!!j.is_playing)setPlaying(!!j.is_playing);
+  $('state').textContent=j.is_playing?'Sonando':'En pausa';
+  if(it.uri!==st.uri){
+    st.uri=it.uri;
+    $('nowTitle').textContent=it.name;
+    $('nowArtist').textContent=(it.artists||[]).map(a=>a.name).join(', ')||(it.show&&it.show.publisher)||'';
+    setLabel(it.name,(imgs[0]||{}).url,it.uri);
+    $('fAlbum').textContent=alb.name||'—';
+    $('fYear').textContent=(alb.release_date||'').slice(0,4)||'—';
+    $('openLink').href=(it.external_urls&&it.external_urls.spotify)||'https://open.spotify.com';
+    try{if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:it.name,artist:$('nowArtist').textContent,artwork:imgs.map(i=>({src:i.url,sizes:i.width+'x'+i.height}))})}catch(e){}
+  }
+  $('fDevice').textContent=j.device?j.device.name:'—';
+}
+let pollTimer=null;
+function startPolling(){clearInterval(pollTimer);poll();pollTimer=setInterval(poll,2500)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
+
+// ---------- controles ----------
+const soon=()=>setTimeout(poll,400);
+$('play').onclick=async()=>{if(!st.uri&&!st.playing){await api('/me/player/play','PUT');return soon()}
+  const was=st.playing;setPlaying(!was);if(!was)st.at=Date.now();else{st.pos+=Date.now()-st.at;st.at=Date.now()}
+  await api(was?'/me/player/pause':'/me/player/play','PUT');if(crackleOn&&ac)ac.resume();soon()};
+$('next').onclick=async()=>{await api('/me/player/next','POST');soon()};
+$('prev').onclick=async()=>{await api('/me/player/previous','POST');soon()};
+const seek=$('seek');
+seek.addEventListener('input',()=>{seeking=true;seek.style.setProperty('--p',seek.value/10+'%')});
+seek.addEventListener('change',async()=>{const ms=Math.round(seek.value/1000*st.dur);st.pos=ms;st.at=Date.now();seeking=false;await api('/me/player/seek?position_ms='+ms,'PUT');soon()});
+
+function setRpm(r){
+  deck.style.setProperty('--spin',r===45?'1.33s':'1.8s');
+  $('rpm33').setAttribute('aria-pressed',r===33);$('rpm45').setAttribute('aria-pressed',r===45);
+  $('rpmTag').textContent=(r===45?'45':'33⅓')+' rpm · Spotify';
+  $('pitch').setAttribute('y',r===45?228:268);
+}
+$('rpm33').onclick=()=>setRpm(33);$('rpm45').onclick=()=>setRpm(45);
+
+let ac,crGain;
+function crackleLevel(){if(crGain)crGain.gain.setTargetAtTime(crackleOn&&st.playing?.5:0,ac.currentTime,.1)}
+$('crackle').onclick=()=>{
+  crackleOn=!crackleOn;$('crackle').setAttribute('aria-pressed',crackleOn);
+  try{
+    if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();
+      const n=ac.sampleRate*5,buf=ac.createBuffer(1,n,ac.sampleRate),d=buf.getChannelData(0);
+      for(let i=0;i<n;i++){d[i]+=(Math.random()*2-1)*.008;if(Math.random()<.0003){const a=(Math.random()*.7+.2)*(Math.random()<.5?-1:1);for(let k=0;k<60&&i+k<n;k++)d[i+k]+=a*Math.exp(-k/7)*(Math.random()*.6+.4)}}
+      const src=ac.createBufferSource();src.buffer=buf;src.loop=true;
+      const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=5000;
+      crGain=ac.createGain();crGain.gain.value=0;src.connect(lp).connect(crGain).connect(ac.destination);src.start();
+    }
+    ac.resume();crackleLevel();
+  }catch(e){}
+};
+
+// ---------- configuración ----------
+$('redir').textContent=REDIRECT;
+$('copyRedir').onclick=()=>{navigator.clipboard.writeText(REDIRECT).then(()=>{$('copyRedir').textContent='Copiado'},()=>{const r=document.createRange();r.selectNodeContents($('redir'));const s=getSelection();s.removeAllRanges();s.addRange(r)})};
+if(LS.get('td.cid'))$('cid').value=LS.get('td.cid');
+$('cidForm').addEventListener('submit',e=>{e.preventDefault();const c=$('cid').value.trim();
+  if(!/^[a-f0-9]{32}$/i.test(c)){say('El Client ID son 32 letras y números. Cópialo desde Settings de tu app en Spotify.');return}
+  login(c)});
+$('logout').onclick=()=>{clearInterval(pollTimer);logout();setPlaying(false);st.uri='';
+  $('state').textContent='Sin conectar';$('nowTitle').textContent='Conecta tu Spotify';$('nowArtist').textContent='El disco va a mostrar lo que suena en tu app de Spotify.';setLabel('TOCADISCOS',null,'x')};
+function showSetup(v){$('setup').hidden=!v;$('connected').hidden=v}
+
+(async()=>{
+  setLabel('TOCADISCOS',null,'x');
+  await handleCallback();
+  if(LS.get('td.refresh')){showSetup(false);$('state').textContent='Conectado';startPolling()}
+  else showSetup(true);
+})();
+</script>
+</body>
+</html>
