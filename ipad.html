@@ -45,6 +45,9 @@ header p{margin:0;color:var(--muted);font-family:var(--mono);font-size:12px;lett
 @keyframes spin{to{transform:rotate(360deg)}}
 #arm{transform-box:view-box;transform-origin:430px 70px;transition:transform 1s cubic-bezier(.3,.7,.2,1);filter:drop-shadow(4px 8px 5px rgba(0,0,0,.55))}
 #lamp{transition:fill .3s}
+.pl{opacity:0;transition:opacity 1.4s ease}
+.pl.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.pl{transition:none}}
 @media (prefers-reduced-motion:reduce){.disc{animation:none}#arm{transition:none}}
 
 .now{display:grid;gap:16px;margin-top:22px}
@@ -111,23 +114,32 @@ ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
   <section>
     <svg id="deck" viewBox="0 0 500 400" role="img" aria-label="Tocadiscos con el disco actual">
       <defs>
-        <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#55331f"/><stop offset=".55" stop-color="#3b2215"/><stop offset="1" stop-color="#26150c"/>
-        </linearGradient>
-        <radialGradient id="vinyl" cx="200" cy="200" r="172" gradientUnits="userSpaceOnUse">
+                <radialGradient id="vinyl" cx="200" cy="200" r="172" gradientUnits="userSpaceOnUse">
           <stop offset=".35" stop-color="#181716"/><stop offset="1" stop-color="#0a0a0a"/>
         </radialGradient>
         <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#7f7b75"/><stop offset=".45" stop-color="#ece8e1"/><stop offset="1" stop-color="#8e8a84"/>
         </linearGradient>
+        <linearGradient id="plinthGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop id="pg1" offset="0" stop-color="hsl(28 55% 42%)"/><stop id="pg2" offset="1" stop-color="hsl(350 50% 30%)"/>
+        </linearGradient>
+        <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/>
+        </linearGradient>
+        <filter id="soft" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+          <feGaussianBlur stdDeviation="38"/>
+          <feColorMatrix type="saturate" values="1.5"/>
+        </filter>
+        <clipPath id="plinthClip"><rect width="500" height="400" rx="24"/></clipPath>
         <clipPath id="labelClip"><circle cx="200" cy="200" r="58"/></clipPath>
       </defs>
-      <rect width="500" height="400" rx="24" fill="url(#wood)"/>
-      <g fill="none" stroke="#000" stroke-opacity=".12" stroke-width="1.2">
-        <path d="M0 40 C120 30 260 55 500 36"/><path d="M0 96 C150 110 300 80 500 104"/><path d="M0 170 C140 160 340 190 500 168"/>
-        <path d="M0 244 C160 258 300 230 500 252"/><path d="M0 318 C130 305 330 335 500 316"/><path d="M0 372 C170 384 320 362 500 380"/>
+      <rect width="500" height="400" rx="24" fill="url(#plinthGrad)"/>
+      <g clip-path="url(#plinthClip)">
+        <image class="pl" id="plA" x="-160" y="-160" width="820" height="720" preserveAspectRatio="xMidYMid slice" filter="url(#soft)" href=""/>
+        <image class="pl" id="plB" x="-160" y="-160" width="820" height="720" preserveAspectRatio="xMidYMid slice" filter="url(#soft)" href=""/>
+        <rect width="500" height="400" fill="url(#glass)"/>
       </g>
-      <rect x="5" y="5" width="490" height="390" rx="20" fill="none" stroke="#fff" stroke-opacity=".07"/>
+      <rect x="1" y="1" width="498" height="398" rx="23.5" fill="none" stroke="#fff" stroke-opacity=".28"/>
       <circle cx="200" cy="200" r="184" fill="#0d0c0b"/>
       <circle cx="200" cy="200" r="184" fill="none" stroke="url(#metal)" stroke-width="2.5" opacity=".55"/>
       <g class="disc">
@@ -140,12 +152,12 @@ ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
       <path d="M286 51 A172 172 0 0 1 331.8 89.4 L246 161.4 A60 60 0 0 0 230 148 Z" fill="#fff" opacity=".05"/>
       <path d="M114 349 A172 172 0 0 1 68.2 310.6 L154 238.6 A60 60 0 0 0 170 252 Z" fill="#fff" opacity=".05"/>
       <circle cx="200" cy="200" r="5" fill="url(#metal)"/>
-      <rect x="452" y="200" width="12" height="150" rx="6" fill="#1a0f09"/>
+      <rect x="452" y="200" width="12" height="150" rx="6" fill="#000" fill-opacity=".3"/>
       <rect id="pitch" x="447" y="268" width="22" height="12" rx="3" fill="url(#metal)"/>
-      <circle id="lamp" cx="40" cy="362" r="5" fill="#3a2a1e"/>
-      <text x="54" y="366" font-family="IBM Plex Mono, monospace" font-size="10" fill="#c9a15a" opacity=".8" letter-spacing="1">START</text>
+      <circle id="lamp" cx="40" cy="362" r="5" fill="#000" fill-opacity=".35"/>
+      <text x="54" y="366" font-family="IBM Plex Mono, monospace" font-size="10" fill="#fff" opacity=".85" letter-spacing="1">START</text>
       <g id="arm">
-        <circle cx="430" cy="70" r="30" fill="#1a110b" stroke="#fff" stroke-opacity=".08"/>
+        <circle cx="430" cy="70" r="30" fill="#000" fill-opacity=".28" stroke="#fff" stroke-opacity=".2"/>
         <rect x="419" y="14" width="22" height="30" rx="4" fill="url(#metal)"/>
         <circle cx="430" cy="70" r="14" fill="url(#metal)"/>
         <path d="M430 70 L430 286 Q430 304 421 318" stroke="url(#metal)" stroke-width="6" fill="none" stroke-linecap="round"/>
@@ -321,8 +333,15 @@ function setBg(url){
   if(!url){a.classList.remove('on');b.classList.remove('on');return}
   const im=new Image();im.onload=()=>{back.style.backgroundImage='url("'+url+'")';back.classList.add('on');front.classList.remove('on')};im.src=url;
 }
+function setPlinth(url,seed){
+  const h=hueOf(seed||'x');
+  $('pg1').setAttribute('stop-color',`hsl(${h} 55% 45%)`);$('pg2').setAttribute('stop-color',`hsl(${(h+50)%360} 50% 32%)`);
+  const a=$('plA'),b=$('plB'),front=a.classList.contains('on')?a:b,back=front===a?b:a;
+  if(!url){a.classList.remove('on');b.classList.remove('on');return}
+  const im=new Image();im.onload=()=>{back.setAttribute('href',url);back.classList.add('on');front.classList.remove('on')};im.src=url;
+}
 function setLabel(title,img,seed){
-  setBg(img);
+  setBg(img);setPlinth(img,seed);
   $('labelBg').setAttribute('fill',`hsl(${hueOf(seed||'x')} 55% 55%)`);
   $('labelImg').setAttribute('href',img||'');
   $('labelTxt').textContent=img?'':(title||'').slice(0,16).toUpperCase();
@@ -331,7 +350,7 @@ function setPlaying(v){
   st.playing=v;deck.classList.toggle('playing',v);
   $('playIc').innerHTML=v?'<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>':'<path d="M7 4v16l13-8z"/>';
   $('play').setAttribute('aria-label',v?'Pausar':'Reproducir');
-  $('lamp').setAttribute('fill',v?'#e7c98a':'#3a2a1e');
+  $('lamp').setAttribute('fill',v?'#fff6d8':'#000');$('lamp').setAttribute('fill-opacity',v?'1':'.35');
   crackleLevel();
 }
 function tick(){
